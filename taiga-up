@@ -1,0 +1,21 @@
+#!/bin/bash
+
+export PROJECT_NAME=taiga
+
+export RANCHER_COMPOSE=~/Documents/CI/rancher-compose/rancher-compose-v0.12.3
+export RANCHER_ACCESS_KEY=`cat $RANCHER_COMPOSE/pehuelche-CI-environ-access-key`
+export RANCHER_SECRET_KEY=`cat $RANCHER_COMPOSE//pehuelche-CI-environ-secret-key`
+
+# URL de Rancher
+export RANCHER_URL=http://pehuelche.diinf.usach.cl:8080/v1/projects/1a7
+
+#export RANCHER_URL=http://pehuelche.diinf.usach.cl:8080/v2-beta/projects/1a7
+
+$RANCHER_COMPOSE/rancher-compose --url $RANCHER_URL \
+								 --access-key $RANCHER_ACCESS_KEY \
+								 --secret-key $RANCHER_SECRET_KEY \
+								 --env-file docker-compose.env \
+								 --project-name $PROJECT_NAME \
+								 --debug \
+								 up \
+								 --recreate

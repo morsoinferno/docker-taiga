@@ -2,16 +2,22 @@ version: '2'
 
 services:
   taiga:
-    build: .
-    ports:
-      - 80:80
+    # build: .
+    image: benhutchins/taiga:latest
+    # ports:
+      # - 80:80
       # - 443:443 # To enable SSL, uncomment this line
-    depends_on:
+    # depends_on:
+    links:
       - postgres
+      # To enable taiga-events, uncomment the following lines:
+      # - taiga-events
+      # - rabbit
+      # - redis
     volumes:
       # I recommend specifying a volume that maps to taiga's media,
       # this way uploaded files are not lost during upgrades of the taiga image
-      - ./media:/usr/src/taiga-back/media
+      - /srv/docker/taiga/taiga-back/media:/usr/src/taiga-back/media:Z # pq Z?
 
       # If you'd like to store the configuration outside of the container,
       # uncomment this volume. This allows for easy changes to the configuration.
@@ -21,37 +27,70 @@ services:
       # - ./ssl.key:/etc/nginx/ssl/ssl.key:ro # To enable SSL, uncomment this line
     environment:
       # Your hostname (REQUIRED)
-      TAIGA_HOSTNAME: localhost
+      TAIGA_HOSTNAME:
 
       # Database settings
       # To use an external database, simply update these and remove the postgres
       # service from this docker-compose.yml file
-      TAIGA_DB_NAME: taigadb
-      TAIGA_DB_HOST: postgres
-      TAIGA_DB_USER: postgres
-      TAIGA_DB_PASSWORD: password
-      TAIGA_SLEEP: 15 # when the db comes up from docker, it is usually too quick
+      TAIGA_DB_NAME:
+      TAIGA_DB_HOST:
+      TAIGA_DB_USER:
+      TAIGA_DB_PASSWORD:
+      # when the db comes up from docker, it is usually too quick
+      TAIGA_SLEEP:
 
-      # TAIGA_SSL: True # To enable SSL, uncomment this line
-      # TAIGA_SSL_BY_REVERSE_PROXY: True # To enable SSL, handling by a reverse proxy, uncomment this
+      # TAIGA_SSL: "True" # To enable SSL, uncomment this line
+      # To enable SSL, handling by a reverse proxy, uncomment this
+      TAIGA_SSL_BY_REVERSE_PROXY: 
+
+      # para evitar que checkee la BD
+      # TAIGA_SKIP_DB_CHECK: "True"
+
+      # Disponibilizar taiga-events
+      # investigar
+      # RABBIT_PORT_5672_TCP_ADDR: rabbit
 
       # To use an external SMTP for emails, fill in these values:
-      # TAIGA_ENABLE_EMAIL: True
-      # TAIGA_EMAIL_FROM: no-reply@taiga.mycompany.net
-      # TAIGA_EMAIL_USE_TLS: True
-      # TAIGA_EMAIL_HOST: smtp.google.com
-      # TAIGA_EMAIL_PORT: 587
-      # TAIGA_EMAIL_USER: me@gmail.com
-      # TAIGA_EMAIL_PASS: super-secure-pass phrase thing!
+      TAIGA_ENABLE_EMAIL:
+      TAIGA_EMAIL_FROM:
+      TAIGA_EMAIL_USE_TLS:
+      # hay una mezcla entre variables de entorno y variables que consume y modifica variables de entorno
+      # en docker-settings.py. Por ejemplo EMAIL_USE_SSL es una variable de entorno consumida por taiga
+      # mientras que TAIGA_EMAIL_USE_TLS es una variable de entorno consumida por docker-settings.py y que
+      # modifica EMAIL_USE_TLS.
+      EMAIL_USE_SSL:
+      TAIGA_EMAIL_HOST:
+      TAIGA_EMAIL_PORT:
+      TAIGA_EMAIL_USER:
+      TAIGA_EMAIL_PASS:
 
   postgres:
     image: postgres
     environment:
-      POSTGRES_DB: taigadb
-      POSTGRES_PASSWORD: password
-      POSTGRES_USER: postgres
-    ports:
-      - 5432
+      POSTGRES_DB:
+      POSTGRES_PASSWORD:
+      POSTGRES_USER:
+    # ports:
+    #  - 5432
     volumes:
       # this helps prevent your postgres data from deleted
-      - ./pgdata:/var/lib/postgresql/data
+     - /srv/docker/taiga/postgresql:/var/lib/postgresql:Z # pq Z?
+
+  # soporte para taiga-events
+  # To enable taiga-events, uncomment the following lines:
+  # rabbit:
+  #   image: rabbitmq:3
+  #   hostname: rabbit
+  
+  # redis:
+  #   image: redis:3
+  
+  # celery:
+  #   image: celery
+  #   links:
+  #     - rabbit
+  
+  # taiga-events:
+  #   image: benhutchins/taiga-events
+  #   links:
+  #     - rabbit

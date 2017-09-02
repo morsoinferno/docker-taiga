@@ -3,22 +3,26 @@ version: '2'
 services:
   taiga:
     # build: .
-    image: benhutchins/taiga:latest
+    #image: benhutchins/taiga:latest
+    # TODO: cambiar por uno con version
+    image: morsoinferno/taiga-with-extensions:latest
     # ports:
       # - 80:80
       # - 443:443 # To enable SSL, uncomment this line
     # depends_on:
+    labels:
+      io.rancher.sidekicks: taiga-data
     links:
       - postgres
       # To enable taiga-events, uncomment the following lines:
       # - taiga-events
       # - rabbit
       # - redis
-    volumes:
+    volumes_from:
       # I recommend specifying a volume that maps to taiga's media,
       # this way uploaded files are not lost during upgrades of the taiga image
-      - /srv/docker/taiga/taiga-back/media:/usr/src/taiga-back/media:Z # pq Z?
-
+      - taiga-data
+    # volumes:
       # If you'd like to store the configuration outside of the container,
       # uncomment this volume. This allows for easy changes to the configuration.
       # - ./conf/taiga:/taiga
@@ -41,7 +45,7 @@ services:
 
       # TAIGA_SSL: "True" # To enable SSL, uncomment this line
       # To enable SSL, handling by a reverse proxy, uncomment this
-      TAIGA_SSL_BY_REVERSE_PROXY: 
+      TAIGA_SSL_BY_REVERSE_PROXY:
 
       # para evitar que checkee la BD
       # TAIGA_SKIP_DB_CHECK: "True"
@@ -64,8 +68,28 @@ services:
       TAIGA_EMAIL_USER:
       TAIGA_EMAIL_PASS:
 
+  taiga-data:
+    image: "library/busybox:latest"
+    labels:
+      # rancher labels
+      # soporte de rancher para manter el contenedor sin correr mientras este
+      # activo gitlab-server
+      io.rancher.container.start_once: true
+      # siempre pull una nueva imagen en cada deploy
+      # io.rancher.container.pull_image: always
+    entrypoint:
+      - "/bin/true" # el comando devuelve verdadero (succefully)
+    volumes:
+      - /srv/docker/taiga/taiga-back/media:/usr/src/taiga-back/media
+      #- "/srv/docker/ci-project/gitlab/log:/home/git/gitlab/log:Z"
+      #- "/etc/gitlab" # configuracion
+      #- "/var/log/gitlab" # logs
+      #- "/var/opt/gitlab" # data
+    #tty: true
+    #stdin_open: true
+
   postgres:
-    image: postgres
+    image: postgres:9.6.4
     environment:
       POSTGRES_DB:
       POSTGRES_PASSWORD:
@@ -74,22 +98,22 @@ services:
     #  - 5432
     volumes:
       # this helps prevent your postgres data from deleted
-     - /srv/docker/taiga/postgresql:/var/lib/postgresql:Z # pq Z?
+     - /srv/docker/taiga/postgresql/data:/var/lib/postgresql/data
 
   # soporte para taiga-events
   # To enable taiga-events, uncomment the following lines:
   # rabbit:
   #   image: rabbitmq:3
   #   hostname: rabbit
-  
+
   # redis:
   #   image: redis:3
-  
+
   # celery:
   #   image: celery
   #   links:
   #     - rabbit
-  
+
   # taiga-events:
   #   image: benhutchins/taiga-events
   #   links:
